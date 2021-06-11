@@ -28,8 +28,8 @@ Keypad keypad = Keypad( makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_
 
 const uint8_t int_mark = 0b01011010;
 const uint8_t g = 0b00101111;
-const uint8_t t[] = { int_mark, 0b00000000, 0b00001000, 0b00111000};
-const uint8_t s[] = { 0b00000000, 0b00000000, 0b00000000, 0b01101101};
+const uint8_t t_int[] = { int_mark, 0b00000000, 0b00001000, 0b00111000};
+const uint8_t s_int[] = { int_mark, 0b00000000, 0b00000000, 0b01101101};
 const uint8_t g_int[] = { int_mark, 0b00000000, 0b00000000, g};
 
 
@@ -66,6 +66,7 @@ int time;
 int game;
 char last_key;
 int state = 0;
+int internal_timer;
 
 // states:
 /* 
@@ -112,15 +113,18 @@ int setKey (char key, int current_value) {
 }
 
 void setGame(int key) {
+  display.setSegments(g_int);
   game = setKey (key, game);
   // delay(1000);
 }
 
 void setCode(int key) {
+  display.setSegments(s_int);
   code = setKey (key, code);
 }
 
 void setTime(int key) {
+  display.setSegments(t_int);
   time = setKey (key, time);
 }
 
@@ -149,12 +153,16 @@ void flashAndReboot(char key) {
   }
 }
 
-void checkTimeout(char key) {
-  time--;
-  if (time <= 0) {
-    state = 7;
+void checkTimeout() {
+  if ( (millis()-internal_timer) > 1000) {
+    internal_timer = millis();
+    // time--;
+    display.showNumberDec(time--);   
+    if (time <= 0) {
+      state = 7;
+    }
   }
-  delay(1000);
+  // delay(1000);
   // flashAndReboot(key);
 }
 
@@ -182,15 +190,12 @@ void game0(char key) {
         Serial.println(key);        
       }
       if (key == '#') {
-        
         Serial.println("\n Will update state.");
         state++;
       }
-      checkTimeout(key);
       break;
     case 4:
       defuse_code = setKey(key, defuse_code);
-      checkTimeout(key);
       break;
     case 5:
       state++;
@@ -203,7 +208,6 @@ void game0(char key) {
 
 void setup(){
   display.setBrightness(0x0a);
-  display.setSegments(g_int);
   Serial.begin(9600);
   while (state < 3) {
     char key = keypad.getKey();
@@ -217,12 +221,14 @@ void setup(){
           break;
         default:
           setTime(key);
+          internal_timer = millis();
       }
     }
   }
 }
 
 void loop(){
+  checkTimeout();
   char key = keypad.getKey();
 
   switch(game) {
