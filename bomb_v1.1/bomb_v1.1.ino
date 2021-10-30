@@ -64,7 +64,7 @@ int code;
 int defuse_code;
 int time;
 int game;
-char last_key;
+char last_key = '#';
 int state = 0;
 int internal_timer;
 
@@ -214,14 +214,28 @@ void setup(){
     if (key){
       switch(state) {
         case 0:
+          Serial.println("state 0");
           setGame(key);
           break;
         case 1:
+          Serial.println("state 1");
           setCode(key);
           break;
         default:
+          Serial.println("state 2");
           setTime(key);
           internal_timer = millis();
+      }
+    } else if (last_key == '#') {
+      switch(state) {
+        case 0:
+          display.setSegments(g_int);
+          break;
+        case 1:
+          display.setSegments(s_int);
+          break;
+        default:
+          display.setSegments(t_int);
       }
     }
   }
